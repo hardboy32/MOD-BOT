@@ -1,14 +1,13 @@
 app:
-  name: Mod Bot
-  # Message text is processed in memory only; moderation logs never include message bodies.
+  name: MOD-BOT
   store_message_content: false
 
 moderation:
   enabled: true
   delete_links: true
-  allow_links_from_exempt_users: true
   blocked_domains: []
   profanity_filter: true
+  profanity_words: []
   blocked_words: []
   repeat_messages: true
   duplicate_window_seconds: 20
@@ -16,22 +15,20 @@ moderation:
     messages: 6
     window_seconds: 8
   actions:
-    # First violation: delete + warning (where supported).
-    # Repeated violations: progressively longer timeout.
     warning_threshold: 1
     timeout_threshold: 2
     ban_threshold: 5
     timeout_seconds: 60
     max_timeout_seconds: 3600
-  # Start conservatively. Add words only after reviewing false positives.
-  profanity_words: []
 
+# Connections are loaded from connections.yaml. Each entry is an independent
+# channel/account, with isolated moderation counters and optional rule overrides.
 platforms:
   twitch:
     enabled: true
   youtube:
-    enabled: false
+    enabled: true
   kick:
-    enabled: false
+    enabled: true
   aparat:
-    enabled: false
+    enabled: true
