@@ -46,11 +46,13 @@ class KickWebhookHub:
                 async with httpx.AsyncClient(timeout=15) as client:
                     response = await client.get(f"{API}/public-key")
                     response.raise_for_status()
-                    payload = response.json()
-                pem = payload.get("data", {}).get("public_key") or payload.get("public_key")
-                if not pem:
-                    raise RuntimeError("Kick public key missing")
-                self.public_key = serialization.load_pem_public_key(pem.encode())
+                    raw_key = response.text.strip()
+                try:
+                    payload = json.loads(raw_key)
+                    raw_key = payload.get("data", {}).get("public_key") or payload.get("public_key") or raw_key
+                except json.JSONDecodeError:
+                    pass
+                self.public_key = serialization.load_pem_public_key(raw_key.encode())
             signed = f"{msg_id}.{timestamp}.{body.decode('utf-8')}".encode()
             self.public_key.verify(base64.b64decode(signature, validate=True), signed, padding.PKCS1v15(), hashes.SHA256())
             return True
@@ -100,22 +102,45 @@ class KickWebhookHub:
 _HUB = KickWebhookHub()
 
 class KickAdapter:
-    def __init__(self, broadcaster_user_id: int, access_token: str, webhook_url: str):
+    def __init__(self, broadcaster_user_id: int, access_token: str, refresh_token: str, webhook_url: str):
         self.broadcaster_user_id = int(broadcaster_user_id)
         self.access_token = access_token.strip()
+        self.refresh_token = refresh_token.strip()
+        self.client_id = os.getenv("KICK_CLIENT_ID", "")
+        self.client_secret = os.getenv("KICK_CLIENT_SECRET", "")
+        self.access_expires_at = time.time() + 3600
         self.webhook_url = webhook_url.strip()
         self.on_message: Callable | None = None
-        if not self.access_token:
-            raise RuntimeError("Kick connection requires a user OAuth access token")
-        if not self.webhook_url.startswith("https://"):
+        if not self.access_token and not self.refresh_token:
+            raise RuntimeError("Kick connection requires an access token or refresh token")
+        if not (self.client_id and self.client_secret):
+            raise RuntimeError("Kick OAuth refresh requires KICK_CLIENT_ID and KICK_CLIENT_SECRET")
+        if not (self.webhook_url.startswith("https://") and self.webhook_url.endswith("/webhooks/kick")):
             raise RuntimeError("KICK_WEBHOOK_URL must be a public HTTPS URL ending in /webhooks/kick")
 
-    def headers(self):
+    async def ensure_token(self):
+        if self.access_token and time.time() < self.access_expires_at - 90:
+            return
+        if not self.refresh_token:
+            raise RuntimeError("Kick access token expired and no refresh token is configured")
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.post("https://id.kick.com/oauth/token", data={
+                "grant_type": "refresh_token", "client_id": self.client_id,
+                "client_secret": self.client_secret, "refresh_token": self.refresh_token,
+            })
+            response.raise_for_status()
+            data = response.json()
+        self.access_token = data["access_token"]
+        self.refresh_token = data.get("refresh_token", self.refresh_token)
+        self.access_expires_at = time.time() + int(data.get("expires_in", 3600))
+
+    async def headers(self):
+        await self.ensure_token()
         return {"Authorization": f"Bearer {self.access_token}", "Content-Type": "application/json"}
 
     async def request(self, method, path, **kwargs):
         async with httpx.AsyncClient(timeout=20) as client:
-            response = await client.request(method, f"{API}{path}", headers=self.headers(), **kwargs)
+            response = await client.request(method, f"{API}{path}", headers=await self.headers(), **kwargs)
             response.raise_for_status()
             return response
 
