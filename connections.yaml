@@ -1,28 +1,33 @@
-# Add as many independent channel connections as you need.
-# Each connection has its own credentials, moderation counters and optional rules.
-# Put real tokens in Railway Variables / .env, never in this file.
+# Add as many independent channel connections as needed.
+# Store all real credentials in Railway Variables, never in this file.
 connections:
-  # Twitch example:
-  # - id: twitch-channel-one
+  # Twitch:
+  # - id: twitch-one
   #   platform: twitch
   #   channel: channel_login
   #   username_env: TWITCH_BOT_USERNAME
   #   token_env: TWITCH_OAUTH_TOKEN
-  #   exempt_users: [streamer_login, trusted_mod]
-  #
-  # A second Twitch channel can use a different token or the same bot account:
-  # - id: twitch-channel-two
-  #   platform: twitch
-  #   channel: another_channel
-  #   username_env: TWITCH_BOT_USERNAME
-  #   token_env: TWITCH_OAUTH_TOKEN
-  #
-  # YouTube example (OAuth access token needs to be valid):
-  # - id: youtube-live-one
+
+  # YouTube:
+  # - id: youtube-one
   #   platform: youtube
   #   live_chat_id: YOUR_LIVE_CHAT_ID
   #   access_token_env: YOUTUBE_ACCESS_TOKEN
+
+  # Kick: each broadcaster account needs its own user OAuth token.
+  # Required scopes: chat:read events:subscribe moderation:chat_message:manage moderation:ban chat:write
+  # Enable Webhooks in Kick Developer settings and set the webhook URL to
+  # https://YOUR-RAILWAY-DOMAIN/webhooks/kick
+  # KICK_WEBHOOK_URL in Railway must use the same address.
+  # - id: kick-one
+  #   platform: kick
+  #   broadcaster_user_id: 123456789
+  #   access_token_env: KICK_ONE_ACCESS_TOKEN
   #
-  # Kick and Aparat entries are intentionally not activated until their adapters
-  # are completed and verified. Unsupported entries are safely skipped.
+  # - id: kick-two
+  #   platform: kick
+  #   broadcaster_user_id: 987654321
+  #   access_token_env: KICK_TWO_ACCESS_TOKEN
+
+  # Aparat remains disabled until a supported public live-chat API is verified.
   []
