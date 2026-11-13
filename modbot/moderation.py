@@ -33,6 +33,7 @@ class ModerationEngine:
         self.user_times: dict[str, deque[float]] = defaultdict(deque)
         self.recent: dict[str, tuple[str, float]] = {}
         self.violations: dict[str, int] = defaultdict(int)
+        self.last_seen: dict[str, float] = {}
         self.last_cleanup = time.monotonic()
 
     def _cleanup(self, now: float, max_age: float) -> None:
@@ -45,8 +46,9 @@ class ModerationEngine:
                 events.popleft()
             if not events:
                 self.user_times.pop(user, None)
-        for user, (_, stamp) in list(self.recent.items()):
+        for user, stamp in list(self.last_seen.items()):
             if stamp < cutoff:
+                self.last_seen.pop(user, None)
                 self.recent.pop(user, None)
                 self.violations.pop(user, None)
         self.last_cleanup = now
@@ -57,6 +59,7 @@ class ModerationEngine:
         if user in self.exempt_users or not self.config.get("enabled", True):
             return Decision()
 
+        self.last_seen[user] = now
         cfg = self.config
         rate = cfg.get("rate_limit", {})
         duplicate_window = float(cfg.get("duplicate_window_seconds", 20))
