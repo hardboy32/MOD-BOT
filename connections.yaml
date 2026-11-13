@@ -1,0 +1,28 @@
+# Add as many independent channel connections as you need.
+# Each connection has its own credentials, moderation counters and optional rules.
+# Put real tokens in Railway Variables / .env, never in this file.
+connections:
+  # Twitch example:
+  # - id: twitch-channel-one
+  #   platform: twitch
+  #   channel: channel_login
+  #   username_env: TWITCH_BOT_USERNAME
+  #   token_env: TWITCH_OAUTH_TOKEN
+  #   exempt_users: [streamer_login, trusted_mod]
+  #
+  # A second Twitch channel can use a different token or the same bot account:
+  # - id: twitch-channel-two
+  #   platform: twitch
+  #   channel: another_channel
+  #   username_env: TWITCH_BOT_USERNAME
+  #   token_env: TWITCH_OAUTH_TOKEN
+  #
+  # YouTube example (OAuth access token needs to be valid):
+  # - id: youtube-live-one
+  #   platform: youtube
+  #   live_chat_id: YOUR_LIVE_CHAT_ID
+  #   access_token_env: YOUTUBE_ACCESS_TOKEN
+  #
+  # Kick and Aparat entries are intentionally not activated until their adapters
+  # are completed and verified. Unsupported entries are safely skipped.
+  []
