@@ -111,8 +111,7 @@ async def start_dashboard():
 
 async def main() -> None:
     dashboard_enabled = os.getenv("DASHBOARD_ENABLED", "false").casefold() == "true"
-    if dashboard_enabled:
-        await start_dashboard()
+    dashboard_runner = await start_dashboard() if dashboard_enabled else None
 
     config = yaml.safe_load(Path("config.yaml").read_text(encoding="utf-8")) or {}
     connections_path = Path("connections.yaml")
