@@ -71,7 +71,7 @@ class TwitchAdapter:
             platform="twitch",
             username=username,
             text=text,
-            is_moderator="moderator/1" in badges or is_broadcaster,
+            is_moderator="moderator/1" in badges or "vip/1" in badges or is_broadcaster,
             is_broadcaster=is_broadcaster,
             message_id=tags.get("id"),
         )
