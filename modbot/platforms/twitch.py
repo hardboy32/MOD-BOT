@@ -1,22 +1,25 @@
-"""Twitch IRC adapter. Requires the bot account to be a channel moderator."""
+"""Twitch IRC adapter. One adapter instance is created per channel connection."""
 from __future__ import annotations
+
 import asyncio
 import logging
-import os
 import re
+
 import websockets
+
 from .base import ChatMessage
 
 log = logging.getLogger(__name__)
 IRC_URL = "wss://irc-ws.chat.twitch.tv:443"
 
+
 class TwitchAdapter:
-    def __init__(self):
-        self.username = os.getenv("TWITCH_BOT_USERNAME", "").strip()
-        self.token = os.getenv("TWITCH_OAUTH_TOKEN", "").strip()
-        self.channel = os.getenv("TWITCH_CHANNEL", "").strip().lstrip("#")
+    def __init__(self, channel: str, username: str, token: str):
+        self.username = username.strip()
+        self.token = token.strip()
+        self.channel = channel.strip().lstrip("#")
         if not all((self.username, self.token, self.channel)):
-            raise RuntimeError("Set TWITCH_BOT_USERNAME, TWITCH_OAUTH_TOKEN and TWITCH_CHANNEL")
+            raise RuntimeError("Twitch connection requires channel, bot username and OAuth token")
         if not self.token.startswith("oauth:"):
             self.token = "oauth:" + self.token
         self.ws = None
@@ -30,7 +33,7 @@ class TwitchAdapter:
                     await ws.send(f"NICK {self.username}\r\n")
                     await ws.send("CAP REQ :twitch.tv/tags twitch.tv/commands\r\n")
                     await ws.send(f"JOIN #{self.channel}\r\n")
-                    log.info("Connected to Twitch chat: #%s", self.channel)
+                    log.info("Connected to Twitch channel #%s", self.channel)
                     async for raw in ws:
                         for line in raw.split("\r\n"):
                             if not line:
@@ -38,13 +41,15 @@ class TwitchAdapter:
                             if line.startswith("PING"):
                                 await ws.send("PONG :tmi.twitch.tv\r\n")
                                 continue
+                            if line.startswith(":tmi.twitch.tv RECONNECT"):
+                                raise ConnectionError("Twitch requested reconnect")
                             parsed = self._parse(line)
                             if parsed:
                                 await on_message(parsed)
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
-                log.warning("Twitch connection interrupted (%s); retrying in 5s", type(exc).__name__)
+                log.warning("Twitch #%s interrupted (%s); retrying in 5s", self.channel, type(exc).__name__)
                 self.ws = None
                 await asyncio.sleep(5)
 
@@ -61,7 +66,15 @@ class TwitchAdapter:
             return None
         username, _, text = match.groups()
         badges = tags.get("badges", "")
-        return ChatMessage("twitch", username, text, "moderator/1" in badges or "broadcaster/1" in badges, "broadcaster/1" in badges, tags.get("id"))
+        is_broadcaster = "broadcaster/1" in badges
+        return ChatMessage(
+            platform="twitch",
+            username=username,
+            text=text,
+            is_moderator="moderator/1" in badges or is_broadcaster,
+            is_broadcaster=is_broadcaster,
+            message_id=tags.get("id"),
+        )
 
     async def _send(self, command: str):
         if self.ws is not None:
@@ -76,3 +89,6 @@ class TwitchAdapter:
 
     async def ban_user(self, message: ChatMessage, reason: str):
         await self._send(f"/ban {message.username} {reason[:180]}")
+
+    async def warn_user(self, message: ChatMessage, reason: str):
+        await self._send(f"/w {message.username} {reason[:180]}")
