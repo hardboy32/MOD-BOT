@@ -12,30 +12,22 @@ from dotenv import load_dotenv
 from modbot.moderation import ModerationEngine
 from modbot.platforms.twitch import TwitchAdapter
 from modbot.platforms.youtube import YouTubeAdapter
+from modbot.platforms.kick import KickAdapter
 
 load_dotenv()
-logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO").upper(),
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-)
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper(),
+                    format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("modbot")
 
 
 def load_connections(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Each item is an isolated platform/channel connection with its own rules."""
     configured = config.get("connections") or []
     if configured:
         return configured
-
-    # Backward-compatible single Twitch connection using the original .env fields.
     if os.getenv("TWITCH_CHANNEL"):
-        return [{
-            "id": "default-twitch",
-            "platform": "twitch",
-            "channel": os.environ["TWITCH_CHANNEL"],
-            "username_env": "TWITCH_BOT_USERNAME",
-            "token_env": "TWITCH_OAUTH_TOKEN",
-        }]
+        return [{"id": "default-twitch", "platform": "twitch",
+                 "channel": os.environ["TWITCH_CHANNEL"],
+                 "username_env": "TWITCH_BOT_USERNAME", "token_env": "TWITCH_OAUTH_TOKEN"}]
     return []
 
 
@@ -63,21 +55,27 @@ async def run_connection(connection: dict[str, Any], base_moderation: dict[str, 
             access_token=env_value(connection.get("access_token_env", "YOUTUBE_ACCESS_TOKEN")),
             poll_interval=float(connection.get("poll_interval_seconds", 5)),
         )
+    elif platform == "kick":
+        adapter = KickAdapter(
+            broadcaster_user_id=int(connection["broadcaster_user_id"]),
+            access_token=env_value(connection.get("access_token_env", "KICK_ACCESS_TOKEN")),
+            webhook_url=env_value("KICK_WEBHOOK_URL"),
+        )
+    elif platform == "aparat":
+        log.error("Aparat connection %s skipped: no verified public live-chat moderation API", connection_id)
+        return
     else:
         log.error("Connection %s uses unsupported platform %s; skipped", connection_id, platform)
         return
 
     async def handle(message):
-        # A separate engine per connection prevents penalties leaking between channels.
         if message.is_moderator or message.is_broadcaster:
             return
         decision = engine.inspect(message.username, message.text)
         if decision.action == "allow":
             return
-        log.info(
-            "Moderation event connection=%s platform=%s user=%s type=%s action=%s",
-            connection_id, message.platform, message.username, decision.violation, decision.action,
-        )
+        log.info("Moderation event connection=%s platform=%s user=%s type=%s action=%s",
+                 connection_id, message.platform, message.username, decision.violation, decision.action)
         try:
             await adapter.delete_message(message)
             if decision.action == "timeout":
@@ -87,12 +85,10 @@ async def run_connection(connection: dict[str, Any], base_moderation: dict[str, 
             elif decision.action == "delete_warn":
                 await adapter.warn_user(message, decision.reason)
         except Exception as exc:
-            log.warning(
-                "Moderation action failed connection=%s platform=%s error=%s",
-                connection_id, platform, type(exc).__name__,
-            )
+            log.warning("Moderation action failed connection=%s platform=%s error=%s",
+                        connection_id, platform, type(exc).__name__)
 
-    log.info("Starting connection %s (%s / %s)", connection_id, platform, connection.get("channel", connection.get("live_chat_id")))
+    log.info("Starting connection %s (%s)", connection_id, platform)
     await adapter.run(handle)
 
 
@@ -109,12 +105,13 @@ async def main() -> None:
         raise RuntimeError("No connections configured. Add one or more entries to connections.yaml.")
 
     moderation = config.get("moderation", {})
-    tasks = [asyncio.create_task(run_connection(c, moderation)) for c in connections]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    failures = [r for r in results if isinstance(r, BaseException)]
+    results = await asyncio.gather(
+        *(run_connection(c, moderation) for c in connections), return_exceptions=True
+    )
+    failures = [result for result in results if isinstance(result, BaseException)]
+    for failure in failures:
+        log.error("A connection stopped: %s", type(failure).__name__)
     if failures:
-        for failure in failures:
-            log.error("A connection stopped: %s", type(failure).__name__)
         raise RuntimeError(f"{len(failures)} connection(s) stopped")
 
 
