@@ -28,7 +28,7 @@ def joined_letter_runs(value: str) -> set[str]:
         if len(token) == 1 and token.isalnum():
             current.append(token)
         else:
-            if len(current) >= 3:
+            if len(current) >= 2:
                 runs.add("".join(current))
             current = []
     return runs
