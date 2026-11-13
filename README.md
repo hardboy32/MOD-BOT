@@ -1,71 +1,59 @@
 # MOD-BOT
 
-Privacy-conscious multi-channel live-chat moderation worker for Railway.
+Privacy-conscious multi-channel live-chat moderation for Railway.
 
-## Multi-channel setup
+## One process, many channels
 
-One worker can manage multiple independent channels simultaneously. Add any number of connection entries to `connections.yaml`. A connection is one channel/live chat; users can connect only one platform or several platforms and channels at once.
+A single running process manages multiple independent channel connections simultaneously. Add any number of entries to `connections.yaml`; each gets its own credentials, moderation counters and optional rule overrides. A user can connect one channel or several channels across supported platforms. Tokens are stored only in Railway Variables / local `.env`, never in Git.
 
-Every connection gets its own adapter and moderation counters. Exempt users and rule overrides can be set per connection; `MODBOT_EXEMPT_USERS` adds global VIP/moderator exemptions across all connections. Credentials are referenced by environment-variable names and must be stored as Railway Variables or in a local `.env` file, never committed to GitHub.
+## Platform status
 
-## Adapter status
+- **Twitch:** IRC chat ingestion and moderation commands.
+- **YouTube:** official YouTube Data API v3 adapter for chat ingestion, message deletion and temporary/permanent live-chat bans.
+- **Kick:** official webhook + Public API adapter. Verifies signed webhooks, ingests chat messages, deletes messages, sends warnings and applies timeouts/bans.
+- **Aparat:** intentionally not activated. A supported public API for reading live chat and deleting/timing out/banning users could not be verified. The service skips Aparat entries safely instead of scraping undocumented private endpoints.
 
-- **Twitch:** multi-channel IRC adapter. The bot account must be a moderator in each channel.
-- **YouTube:** official YouTube Data API v3 adapter. Supports chat ingestion, message deletion and temporary/permanent bans. Requires live chat ID and valid OAuth access token; API quota and token expiry apply.
-- **Kick:** connection schema reserved; adapter is not implemented yet.
-- **Aparat:** connection schema reserved; a supported public chat/moderation API has not been verified, so no live adapter is claimed.
+## Kick configuration
 
-Unsupported platform entries are safely skipped rather than falsely shown as connected.
-
-## Configure
-
-1. Use Python 3.11 or newer.
-2. Install: `pip install -r requirements.txt`.
-3. Add credentials to Railway Variables (or copy `.env.example` to `.env` locally).
-4. Add one or more entries to `connections.yaml`.
-5. Run `python main.py`.
-
-Twitch example:
+1. Create a Kick Developer application.
+2. Each broadcaster must authorize the app; save each user's access token as a separate Railway Variable.
+3. Required scopes: `chat:read events:subscribe moderation:chat_message:manage moderation:ban chat:write`.
+4. In the Kick Developer app settings, enable Webhooks and set the public URL to `https://YOUR-RAILWAY-DOMAIN/webhooks/kick`.
+5. Set Railway Variable `KICK_WEBHOOK_URL` to the same URL.
+6. Add one Kick connection per broadcaster in `connections.yaml`.
 
 ```yaml
 connections:
-  - id: twitch-one
-    platform: twitch
-    channel: first_channel
-    username_env: TWITCH_BOT_USERNAME
-    token_env: TWITCH_OAUTH_TOKEN
-    exempt_users: [channel_owner, trusted_mod]
-
-  - id: twitch-two
-    platform: twitch
-    channel: second_channel
-    username_env: TWITCH_BOT_USERNAME
-    token_env: TWITCH_OAUTH_TOKEN
+  - id: kick-channel-a
+    platform: kick
+    broadcaster_user_id: 123456789
+    access_token_env: KICK_CHANNEL_A_TOKEN
+  - id: kick-channel-b
+    platform: kick
+    broadcaster_user_id: 987654321
+    access_token_env: KICK_CHANNEL_B_TOKEN
 ```
 
-YouTube example:
+The webhook endpoint is shared across all Kick connections and routes messages by broadcaster ID. It verifies signatures using Kick's current public key. **Kick requires a publicly reachable HTTPS webhook**, so expose the Railway service on a public domain and route its configured port to the process; a private-only Worker endpoint will not receive webhooks.
 
-```yaml
-connections:
-  - id: youtube-live
-    platform: youtube
-    live_chat_id: YOUR_LIVE_CHAT_ID
-    access_token_env: YOUTUBE_ACCESS_TOKEN
-```
+## Twitch and YouTube
 
-## Moderation
+Twitch requires a bot username/token and moderator permissions in every connected channel. YouTube requires a live chat ID and valid OAuth access token.
 
-Link filtering, configured blocked domains/words, repeated-message detection and flood protection are implemented. First violation deletes and warns where supported; repeated violations escalate to timeout and then ban. Moderators, broadcasters and configured exempt users are ignored.
+## Moderation and privacy
 
-Message bodies are processed in memory only and are not written to logs or a database. A small Persian and English starter profanity list is included in `config.yaml`; review and customize it for each community to reduce false positives. Additional blocked terms can be added there. Test in a private channel before enabling automatic timeouts/bans in a public stream.
+Link filtering, configured blocked domains/words, repeat detection and flood protection are included. First violation deletes and warns where supported; repeated violations escalate to timeout and then ban. Moderators, broadcasters and configured exempt users are ignored. Message bodies are processed in memory only and never written to logs or a database.
+
+Review the Persian and English starter profanity list in `config.yaml` to reduce false positives.
 
 ## Railway
 
-Create a Railway **Worker** from this repository and use `python main.py` as the start command. Add all environment secrets referenced by `connections.yaml` in Railway Variables.
+Start command: `python main.py`. Add all token variables referenced by `connections.yaml`. For Kick, configure the public domain and `KICK_WEBHOOK_URL` as described above.
 
-## Official API references
+## Official references
 
-- Twitch IRC: https://dev.twitch.tv/docs/chat/irc/
-- Twitch moderation: https://dev.twitch.tv/docs/chat/moderation/
+- Twitch: https://dev.twitch.tv/docs/chat/irc/
 - YouTube Live Chat: https://developers.google.com/youtube/v3/live/docs/liveChatMessages
-- Kick developer docs: https://docs.kick.com/
+- Kick Public API: https://docs.kick.com/
+- Kick webhook security: https://docs.kick.com/events/webhook-security
+- Kick event payloads: https://docs.kick.com/events/event-types
