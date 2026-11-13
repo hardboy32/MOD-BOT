@@ -23,11 +23,13 @@ connections:
   #   platform: kick
   #   broadcaster_user_id: 123456789
   #   access_token_env: KICK_ONE_ACCESS_TOKEN
+  #   refresh_token_env: KICK_ONE_REFRESH_TOKEN
   #
   # - id: kick-two
   #   platform: kick
   #   broadcaster_user_id: 987654321
   #   access_token_env: KICK_TWO_ACCESS_TOKEN
+  #   refresh_token_env: KICK_TWO_REFRESH_TOKEN
 
   # Aparat remains disabled until a supported public live-chat API is verified.
   []
