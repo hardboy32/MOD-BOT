@@ -58,7 +58,8 @@ async def run_connection(connection: dict[str, Any], base_moderation: dict[str, 
     elif platform == "kick":
         adapter = KickAdapter(
             broadcaster_user_id=int(connection["broadcaster_user_id"]),
-            access_token=env_value(connection.get("access_token_env", "KICK_ACCESS_TOKEN")),
+            access_token=env_value(connection.get("access_token_env", "")),
+            refresh_token=env_value(connection.get("refresh_token_env", "")),
             webhook_url=env_value("KICK_WEBHOOK_URL"),
         )
     elif platform == "aparat":
