@@ -11,7 +11,7 @@ A single running process manages multiple independent channel connections simult
 - **Twitch:** IRC chat ingestion and moderation commands.
 - **YouTube:** official YouTube Data API v3 adapter for chat ingestion, message deletion and temporary/permanent live-chat bans.
 - **Kick:** official webhook + Public API adapter. Verifies signed webhooks, ingests chat messages, deletes messages, sends warnings and applies timeouts/bans.
-- **Aparat:** not implemented yet. The official developer portal at https://api.aparat.com/ currently displays a generic documentation landing page, but its “api document” link does not expose a usable API specification. We could not verify documented endpoints, authentication, or permissions for live-chat reading and moderation (delete/timeout/ban). We will not invent private endpoints or claim an adapter works without a verifiable API contract. If Aparat provides an API document or authorized developer access, an adapter can be added without changing the multi-platform core.
+- **Aparat:** integration scaffold and adapter safety boundary are prepared, but live-chat ingestion and moderation are **not active yet**. The official developer portal currently exposes only a generic documentation landing page; we could not verify the API contract for chat reading or delete/timeout/ban actions. Aparat remains disabled until its official API documentation and authorized access are provided. See [APARAT_API_INTEGRATION.md](APARAT_API_INTEGRATION.md) for the exact information needed. We will not invent private endpoints or claim unsupported actions work.
 
 ## Kick configuration
 
