@@ -97,15 +97,15 @@ async def run_connection(connection: dict[str, Any], base_moderation: dict[str, 
 
 async def main() -> None:
     config = yaml.safe_load(Path("config.yaml").read_text(encoding="utf-8")) or {}
-    connections = load_connections(config)
-    if not connections:
-        raise RuntimeError("No connections configured. Add one or more entries to connections.yaml.")
-
-    # Optional separate file keeps the main rules easy to edit.
     connections_path = Path("connections.yaml")
+    connections = []
     if connections_path.exists():
         extra = yaml.safe_load(connections_path.read_text(encoding="utf-8")) or {}
-        connections = extra.get("connections", connections)
+        connections = extra.get("connections") or []
+    if not connections:
+        connections = load_connections(config)
+    if not connections:
+        raise RuntimeError("No connections configured. Add one or more entries to connections.yaml.")
 
     moderation = config.get("moderation", {})
     tasks = [asyncio.create_task(run_connection(c, moderation)) for c in connections]
