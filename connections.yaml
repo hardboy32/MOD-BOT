@@ -34,7 +34,7 @@ connections: []
 #     access_token_env: KICK_TWO_ACCESS_TOKEN
 #     refresh_token_env: KICK_TWO_REFRESH_TOKEN
 #
-# Aparat: not enabled yet. Its developer portal currently has no accessible
-# API specification for live-chat ingestion or moderation (delete/timeout/ban).
-# Do not add an Aparat connection until an official or otherwise verifiable
-# API contract and authorized credentials are available.
+# Aparat: adapter scaffold is prepared but the integration is disabled until
+# Aparat provides its official live-chat + moderation API contract and access.
+# See APARAT_API_INTEGRATION.md for the exact required docs and sample payloads.
+# Do not add an Aparat connection yet; guessed/private endpoints are not used.
