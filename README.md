@@ -65,7 +65,10 @@ Start command: `python main.py`. Add all token variables referenced by `connecti
 ## Copyright and license
 
 **Copyright (c) 2026 hardboy32. All rights reserved.**  
-**Owner:** [hardboy32](https://github.com/hardboy32) · [Contact / permission requests](https://github.com/hardboy32) This repository is public for
-inspection only; it is not offered under an open-source license. Copying,
+**Owner:** [hardboy32](https://github.com/hardboy32)  
+**Email:** m629446@gmail.com  
+**Contact / permission requests:** [m629446@gmail.com](mailto:m629446@gmail.com)  
+
+This repository is public for inspection only; it is not offered under an open-source license. Copying,
 modifying, redistributing, rebranding, or commercial use requires prior written
 permission from the copyright holder. See [LICENSE](LICENSE) and [COPYRIGHT.md](COPYRIGHT.md).
