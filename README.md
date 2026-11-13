@@ -6,7 +6,7 @@ Privacy-conscious multi-channel live-chat moderation worker for Railway.
 
 One worker can manage multiple independent channels simultaneously. Add any number of connection entries to `connections.yaml`. A connection is one channel/live chat; users can connect only one platform or several platforms and channels at once.
 
-Every connection gets its own adapter and moderation counters. Exempt users and rule overrides can be set per connection. Credentials are referenced by environment-variable names and must be stored as Railway Variables or in a local `.env` file, never committed to GitHub.
+Every connection gets its own adapter and moderation counters. Exempt users and rule overrides can be set per connection; `MODBOT_EXEMPT_USERS` adds global VIP/moderator exemptions across all connections. Credentials are referenced by environment-variable names and must be stored as Railway Variables or in a local `.env` file, never committed to GitHub.
 
 ## Adapter status
 
@@ -57,7 +57,7 @@ connections:
 
 Link filtering, configured blocked domains/words, repeated-message detection and flood protection are implemented. First violation deletes and warns where supported; repeated violations escalate to timeout and then ban. Moderators, broadcasters and configured exempt users are ignored.
 
-Message bodies are processed in memory only and are not written to logs or a database. The profanity and blocked-word lists start empty to avoid false positives; add reviewed terms in `config.yaml`. Test in a private channel before enabling automatic timeouts/bans in a public stream.
+Message bodies are processed in memory only and are not written to logs or a database. A small Persian and English starter profanity list is included in `config.yaml`; review and customize it for each community to reduce false positives. Additional blocked terms can be added there. Test in a private channel before enabling automatic timeouts/bans in a public stream.
 
 ## Railway
 
