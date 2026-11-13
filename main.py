@@ -48,6 +48,7 @@ async def run_connection(connection: dict[str, Any], base_moderation: dict[str, 
     platform = str(connection.get("platform", "")).lower()
     rules = {**base_moderation, **connection.get("moderation", {})}
     exempt = {str(x).casefold() for x in connection.get("exempt_users", [])}
+    exempt.update(x.strip().casefold() for x in os.getenv("MODBOT_EXEMPT_USERS", "").split(",") if x.strip())
     engine = ModerationEngine(rules, exempt)
 
     if platform == "twitch":
