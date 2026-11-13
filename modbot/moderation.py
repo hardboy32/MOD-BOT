@@ -13,9 +13,25 @@ URL_RE = re.compile(r"(?:https?://|www\.)\S+|\b[\w.-]+\.(?:com|net|org|io|gg|tv|
 
 def normalize(value: str) -> str:
     value = unicodedata.normalize("NFKC", value).casefold()
+    value = value.replace("\u200c", "").replace("\u200d", "").replace("\ufeff", "")
     value = re.sub(r"[\u064b-\u065f\u0670\u0640]", "", value)
     value = re.sub(r"[^\w\s]", "", value)
     return re.sub(r"\s+", " ", value).strip()
+
+
+def joined_letter_runs(value: str) -> set[str]:
+    """Catch spaced-out evasions such as 'f u c k' without joining normal words."""
+    tokens = value.split()
+    runs: set[str] = set()
+    current: list[str] = []
+    for token in tokens + [""]:
+        if len(token) == 1 and token.isalnum():
+            current.append(token)
+        else:
+            if len(current) >= 3:
+                runs.add("".join(current))
+            current = []
+    return runs
 
 
 @dataclass
@@ -83,7 +99,12 @@ class ModerationEngine:
             words = [normalize(w) for w in cfg.get("profanity_words", []) if normalize(w)]
             blocked = [normalize(w) for w in cfg.get("blocked_words", []) if normalize(w)]
             tokens = set(normalized.split())
-            if any(w in tokens for w in words + blocked):
+            spaced_evasions = joined_letter_runs(normalized)
+            padded = f" {normalized} "
+            if any(
+                w in tokens or (len(w.split()) > 1 and f" {w} " in padded) or (len(w) >= 3 and w in spaced_evasions)
+                for w in words + blocked
+            ):
                 violation, reason = "profanity", "Blocked language"
 
         if not violation and cfg.get("repeat_messages", True):
