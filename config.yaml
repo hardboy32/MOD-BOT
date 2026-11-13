@@ -49,4 +49,4 @@ platforms:
   kick:
     enabled: true
   aparat:
-    enabled: true
+    enabled: false
