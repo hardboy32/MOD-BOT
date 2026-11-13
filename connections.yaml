@@ -1,35 +1,40 @@
 # Add as many independent channel connections as needed.
 # Store all real credentials in Railway Variables, never in this file.
-connections:
-  # Twitch:
-  # - id: twitch-one
-  #   platform: twitch
-  #   channel: channel_login
-  #   username_env: TWITCH_BOT_USERNAME
-  #   token_env: TWITCH_OAUTH_TOKEN
-
-  # YouTube:
-  # - id: youtube-one
-  #   platform: youtube
-  #   live_chat_id: YOUR_LIVE_CHAT_ID
-  #   access_token_env: YOUTUBE_ACCESS_TOKEN
-
-  # Kick: each broadcaster account needs its own user OAuth token.
-  # Required scopes: chat:read events:subscribe moderation:chat_message:manage moderation:ban chat:write
-  # Enable Webhooks in Kick Developer settings and set the webhook URL to
-  # https://YOUR-RAILWAY-DOMAIN/webhooks/kick
-  # KICK_WEBHOOK_URL in Railway must use the same address.
-  # - id: kick-one
-  #   platform: kick
-  #   broadcaster_user_id: 123456789
-  #   access_token_env: KICK_ONE_ACCESS_TOKEN
-  #   refresh_token_env: KICK_ONE_REFRESH_TOKEN
-  #
-  # - id: kick-two
-  #   platform: kick
-  #   broadcaster_user_id: 987654321
-  #   access_token_env: KICK_TWO_ACCESS_TOKEN
-  #   refresh_token_env: KICK_TWO_REFRESH_TOKEN
-
-  # Aparat remains disabled until a supported public live-chat API is verified.
-  []
+connections: []
+# Examples:
+#
+# Twitch:
+# connections:
+#   - id: twitch-one
+#     platform: twitch
+#     channel: channel_login
+#     username_env: TWITCH_BOT_USERNAME
+#     token_env: TWITCH_OAUTH_TOKEN
+#
+# YouTube:
+#   - id: youtube-one
+#     platform: youtube
+#     live_chat_id: YOUR_LIVE_CHAT_ID
+#     access_token_env: YOUTUBE_ACCESS_TOKEN
+#
+# Kick: each broadcaster account needs its own user OAuth token.
+# Required scopes: chat:read events:subscribe moderation:chat_message:manage moderation:ban chat:write
+# Enable Webhooks in Kick Developer settings and set the webhook URL to
+# https://YOUR-RAILWAY-DOMAIN/webhooks/kick
+# KICK_WEBHOOK_URL in Railway must use the same address.
+#   - id: kick-one
+#     platform: kick
+#     broadcaster_user_id: 123456789
+#     access_token_env: KICK_ONE_ACCESS_TOKEN
+#     refresh_token_env: KICK_ONE_REFRESH_TOKEN
+#
+#   - id: kick-two
+#     platform: kick
+#     broadcaster_user_id: 987654321
+#     access_token_env: KICK_TWO_ACCESS_TOKEN
+#     refresh_token_env: KICK_TWO_REFRESH_TOKEN
+#
+# Aparat: not enabled yet. Its developer portal currently has no accessible
+# API specification for live-chat ingestion or moderation (delete/timeout/ban).
+# Do not add an Aparat connection until an official or otherwise verifiable
+# API contract and authorized credentials are available.
