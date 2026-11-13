@@ -16,22 +16,24 @@ A single running process manages multiple independent channel connections simult
 ## Kick configuration
 
 1. Create a Kick Developer application.
-2. Each broadcaster must authorize the app; save each user's access token as a separate Railway Variable.
-3. Required scopes: `chat:read events:subscribe moderation:chat_message:manage moderation:ban chat:write`.
+2. Each broadcaster must authorize the app; save each user's access token and refresh token as separate Railway Variables. The worker refreshes access tokens automatically using the app client credentials.
+3. Required scopes: `chat:read events:subscribe moderation:chat_message:manage moderation:ban chat:write`. Keep the refresh token secret; access tokens expire and are refreshed by the adapter.
 4. In the Kick Developer app settings, enable Webhooks and set the public URL to `https://YOUR-RAILWAY-DOMAIN/webhooks/kick`.
 5. Set Railway Variable `KICK_WEBHOOK_URL` to the same URL.
-6. Add one Kick connection per broadcaster in `connections.yaml`.
+6. Set `KICK_CLIENT_ID` and `KICK_CLIENT_SECRET` in Railway Variables, then add one Kick connection per broadcaster in `connections.yaml` with both `access_token_env` and `refresh_token_env`.
 
 ```yaml
 connections:
   - id: kick-channel-a
     platform: kick
     broadcaster_user_id: 123456789
-    access_token_env: KICK_CHANNEL_A_TOKEN
+    access_token_env: KICK_CHANNEL_A_ACCESS_TOKEN
+    refresh_token_env: KICK_CHANNEL_A_REFRESH_TOKEN
   - id: kick-channel-b
     platform: kick
     broadcaster_user_id: 987654321
-    access_token_env: KICK_CHANNEL_B_TOKEN
+    access_token_env: KICK_CHANNEL_B_ACCESS_TOKEN
+    refresh_token_env: KICK_CHANNEL_B_REFRESH_TOKEN
 ```
 
 The webhook endpoint is shared across all Kick connections and routes messages by broadcaster ID. It verifies signatures using Kick's current public key. **Kick requires a publicly reachable HTTPS webhook**, so expose the Railway service on a public domain and route its configured port to the process; a private-only Worker endpoint will not receive webhooks.
