@@ -33,23 +33,50 @@ class ModerationEngine:
         self.user_times: dict[str, deque[float]] = defaultdict(deque)
         self.recent: dict[str, tuple[str, float]] = {}
         self.violations: dict[str, int] = defaultdict(int)
+        self.last_cleanup = time.monotonic()
+
+    def _cleanup(self, now: float, max_age: float) -> None:
+        if now - self.last_cleanup < 60:
+            return
+        cutoff = now - max(max_age, 60)
+        for user in list(self.user_times):
+            events = self.user_times[user]
+            while events and events[0] < cutoff:
+                events.popleft()
+            if not events:
+                self.user_times.pop(user, None)
+        for user, (_, stamp) in list(self.recent.items()):
+            if stamp < cutoff:
+                self.recent.pop(user, None)
+                self.violations.pop(user, None)
+        self.last_cleanup = now
 
     def inspect(self, username: str, message: str, now: float | None = None) -> Decision:
-        now = now or time.monotonic()
+        now = time.monotonic() if now is None else now
         user = username.casefold()
-        if user in self.exempt_users:
+        if user in self.exempt_users or not self.config.get("enabled", True):
             return Decision()
+
         cfg = self.config
-        if not cfg.get("enabled", True):
-            return Decision()
+        rate = cfg.get("rate_limit", {})
+        duplicate_window = float(cfg.get("duplicate_window_seconds", 20))
+        rate_window = float(rate.get("window_seconds", 8))
+        self._cleanup(now, max(duplicate_window, rate_window) * 2)
 
         normalized = normalize(message)
         violation: str | None = None
         reason = ""
 
-        if cfg.get("delete_links", True) and URL_RE.search(message):
-            violation, reason = "link", "Links are not allowed"
-        elif cfg.get("profanity_filter", True):
+        if cfg.get("delete_links", True):
+            url_match = URL_RE.search(message)
+            blocked_domains = {str(x).casefold().lstrip(".") for x in cfg.get("blocked_domains", [])}
+            if url_match:
+                candidate = url_match.group(0).casefold().removeprefix("https://").removeprefix("http://").removeprefix("www.")
+                domain = candidate.split("/")[0].split(":")[0]
+                if not cfg.get("blocked_domains") or any(domain == d or domain.endswith("." + d) for d in blocked_domains):
+                    violation, reason = "link", "Links are not allowed"
+
+        if not violation and cfg.get("profanity_filter", True):
             words = [normalize(w) for w in cfg.get("profanity_words", []) if normalize(w)]
             blocked = [normalize(w) for w in cfg.get("blocked_words", []) if normalize(w)]
             tokens = set(normalized.split())
@@ -58,16 +85,13 @@ class ModerationEngine:
 
         if not violation and cfg.get("repeat_messages", True):
             previous = self.recent.get(user)
-            window = float(cfg.get("duplicate_window_seconds", 20))
-            if previous and previous[0] == normalized and now - previous[1] <= window and normalized:
+            if previous and previous[0] == normalized and now - previous[1] <= duplicate_window and normalized:
                 violation, reason = "repeat", "Repeated message"
             self.recent[user] = (normalized, now)
 
         if not violation:
-            rate = cfg.get("rate_limit", {})
             events = self.user_times[user]
-            window = float(rate.get("window_seconds", 8))
-            while events and now - events[0] > window:
+            while events and now - events[0] > rate_window:
                 events.popleft()
             events.append(now)
             if len(events) > int(rate.get("messages", 6)):
@@ -82,8 +106,9 @@ class ModerationEngine:
         if count >= int(actions.get("ban_threshold", 5)):
             return Decision(violation, "ban", reason=reason)
         if count >= int(actions.get("timeout_threshold", 2)):
+            threshold = int(actions.get("timeout_threshold", 2))
             base = int(actions.get("timeout_seconds", 60))
             maximum = int(actions.get("max_timeout_seconds", 3600))
-            duration = min(base * (2 ** (count - int(actions.get("timeout_threshold", 2)))), maximum)
+            duration = min(base * (2 ** (count - threshold)), maximum)
             return Decision(violation, "timeout", duration, reason)
         return Decision(violation, "delete_warn", reason=reason)
