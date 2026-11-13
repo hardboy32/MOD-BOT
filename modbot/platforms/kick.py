@@ -108,7 +108,8 @@ class KickAdapter:
         self.refresh_token = refresh_token.strip()
         self.client_id = os.getenv("KICK_CLIENT_ID", "")
         self.client_secret = os.getenv("KICK_CLIENT_SECRET", "")
-        self.access_expires_at = time.time() + 3600
+        # Refresh immediately on first API call when a refresh token is available.
+        self.access_expires_at = 0 if self.refresh_token else time.time() + 3600
         self.webhook_url = webhook_url.strip()
         self.on_message: Callable | None = None
         if not self.access_token and not self.refresh_token:
