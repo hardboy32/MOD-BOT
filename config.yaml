@@ -7,7 +7,25 @@ moderation:
   delete_links: true
   blocked_domains: []
   profanity_filter: true
-  profanity_words: []
+  profanity_words:
+    # Starter list; review and customize for each community.
+    - fuck
+    - fucking
+    - shit
+    - bullshit
+    - bitch
+    - asshole
+    - bastard
+    - motherfucker
+    - کص
+    - کیر
+    - کسکش
+    - جنده
+    - مادرجنده
+    - پدرسگ
+    - حرومزاده
+    - گوه
+    - گه
   blocked_words: []
   repeat_messages: true
   duplicate_window_seconds: 20
