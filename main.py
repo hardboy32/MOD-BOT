@@ -7,12 +7,13 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from aiohttp import web
 from dotenv import load_dotenv
 
 from modbot.moderation import ModerationEngine
 from modbot.platforms.twitch import TwitchAdapter
 from modbot.platforms.youtube import YouTubeAdapter
-from modbot.platforms.kick import KickAdapter
+from modbot.platforms.kick import KickAdapter, register_kick_routes
 
 load_dotenv()
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -93,7 +94,26 @@ async def run_connection(connection: dict[str, Any], base_moderation: dict[str, 
     await adapter.run(handle)
 
 
+async def start_dashboard():
+    from modbot.dashboard import create_dashboard_app
+    from modbot.tenant_store import TenantStore
+
+    store = TenantStore()
+    app = create_dashboard_app(store)
+    register_kick_routes(app)
+    runner = web.AppRunner(app, access_log=None)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", int(os.getenv("PORT", "8080")))
+    await site.start()
+    log.info("MOD-BOT dashboard and webhook server started")
+    return runner
+
+
 async def main() -> None:
+    dashboard_enabled = os.getenv("DASHBOARD_ENABLED", "false").casefold() == "true"
+    if dashboard_enabled:
+        await start_dashboard()
+
     config = yaml.safe_load(Path("config.yaml").read_text(encoding="utf-8")) or {}
     connections_path = Path("connections.yaml")
     connections = []
@@ -102,7 +122,11 @@ async def main() -> None:
         connections = extra.get("connections") or []
     if not connections:
         connections = load_connections(config)
+
     if not connections:
+        if dashboard_enabled:
+            log.info("Dashboard-only mode: no platform connections are configured yet")
+            await asyncio.Event().wait()
         raise RuntimeError("No connections configured. Add one or more entries to connections.yaml.")
 
     moderation = config.get("moderation", {})
