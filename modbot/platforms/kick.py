@@ -20,13 +20,18 @@ class KickWebhookHub:
         self.public_key = None
         self.seen = OrderedDict()
 
+    def register_routes(self, app: web.Application):
+        """Attach Kick's webhook endpoint to the shared Railway web application."""
+        app.router.add_post("/webhooks/kick", self.receive)
+
     async def start(self):
+        """Legacy standalone listener used when the dashboard is disabled."""
         async with self.lock:
             if self.runner is not None:
                 return
             app = web.Application(client_max_size=1024 * 1024)
             app.router.add_get("/health", self.health)
-            app.router.add_post("/webhooks/kick", self.receive)
+            self.register_routes(app)
             self.runner = web.AppRunner(app, access_log=None)
             await self.runner.setup()
             await web.TCPSite(self.runner, "0.0.0.0", int(os.getenv("PORT", "8080"))).start()
@@ -101,6 +106,11 @@ class KickWebhookHub:
 
 _HUB = KickWebhookHub()
 
+
+def register_kick_routes(app: web.Application):
+    _HUB.register_routes(app)
+
+
 class KickAdapter:
     def __init__(self, broadcaster_user_id: int, access_token: str, refresh_token: str, webhook_url: str):
         self.broadcaster_user_id = int(broadcaster_user_id)
@@ -108,7 +118,6 @@ class KickAdapter:
         self.refresh_token = refresh_token.strip()
         self.client_id = os.getenv("KICK_CLIENT_ID", "")
         self.client_secret = os.getenv("KICK_CLIENT_SECRET", "")
-        # Refresh immediately on first API call when a refresh token is available.
         self.access_expires_at = 0 if self.refresh_token else time.time() + 3600
         self.webhook_url = webhook_url.strip()
         self.on_message: Callable | None = None
@@ -150,7 +159,8 @@ class KickAdapter:
             raise RuntimeError(f"Duplicate Kick broadcaster ID {self.broadcaster_user_id}")
         self.on_message = on_message
         _HUB.adapters[self.broadcaster_user_id] = self
-        await _HUB.start()
+        if os.getenv("DASHBOARD_ENABLED", "false").casefold() != "true":
+            await _HUB.start()
         await self.request("POST", "/events/subscriptions", json={
             "method": "webhook", "events": [{"name": "chat.message.sent", "version": 1}]
         })
