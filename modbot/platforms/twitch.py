@@ -91,4 +91,4 @@ class TwitchAdapter:
         await self._send(f"/ban {message.username} {reason[:180]}")
 
     async def warn_user(self, message: ChatMessage, reason: str):
-        await self._send(f"/w {message.username} {reason[:180]}")
+        await self._send(f"@{message.username} warning: {reason[:150]}")
