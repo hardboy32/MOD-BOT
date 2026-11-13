@@ -60,3 +60,11 @@ Start command: `python main.py`. Add all token variables referenced by `connecti
 - Kick webhook security: https://docs.kick.com/events/webhook-security
 - Kick event payloads: https://docs.kick.com/events/event-types
 - Aparat developer portal: https://api.aparat.com/
+
+
+## Copyright and license
+
+**Copyright (c) 2026 hardboy32. All rights reserved.** This repository is public for
+inspection only; it is not offered under an open-source license. Copying,
+modifying, redistributing, rebranding, or commercial use requires prior written
+permission from the copyright holder. See [LICENSE](LICENSE) and [COPYRIGHT.md](COPYRIGHT.md).
