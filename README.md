@@ -6,6 +6,20 @@ Privacy-conscious multi-channel live-chat moderation for Railway.
 
 A single running process manages multiple independent channel connections simultaneously. Add any number of entries to `connections.yaml`; each gets its own credentials, moderation counters and optional rule overrides. A user can connect one channel or several channels across supported platforms. Tokens are stored only in Railway Variables / local `.env`, never in Git.
 
+## Shared dashboard foundation (preview)
+
+MOD-BOT now contains an optional multi-user dashboard foundation. It runs inside the same Railway service as the bot; Railway provides the public domain, so a separate website host or Worker is not required.
+
+- Enable with `DASHBOARD_ENABLED=true`.
+- Set `ALLOW_SIGNUPS=true` only when you are ready to allow account creation.
+- Generate and set a permanent `TENANT_ENCRYPTION_KEY`.
+- Mount a Railway persistent volume at `/data` and set `DATABASE_PATH=/data/modbot.sqlite3`.
+- The dashboard currently supports account registration/login and encrypted, per-account JSON settings storage.
+- Registration is currently free preview access: **payments, subscription enforcement, email verification, password reset, and customer-specific live adapter orchestration are not implemented yet.**
+- Do not advertise this preview as a paid, production-ready multi-tenant service. The existing bot still loads its operational platform connections from `connections.yaml`; dashboard settings are not yet used to start customer adapters.
+
+The dashboard and Kick webhook share one aiohttp server and one Railway port. When the dashboard is disabled, the existing standalone Kick webhook listener remains available.
+
 ## Platform status
 
 - **Twitch:** IRC chat ingestion and moderation commands.
