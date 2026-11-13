@@ -3,6 +3,7 @@
 **Copyright owner:** `hardboy32` (GitHub account)  
 **Owner profile:** https://github.com/hardboy32  
 **Project:** https://github.com/hardboy32/MOD-BOT  
+**Email:** m629446@gmail.com  
 **Copyright:** © 2026 hardboy32. All rights reserved.
 
 MOD-BOT is published publicly for inspection. Public visibility does not mean
@@ -15,8 +16,8 @@ Without prior written permission from the copyright holder, you may not:
 - Redistribute, sublicense, sell, or commercially exploit the software.
 - Rebrand the project or publish it as your own work.
 
-For permission requests, contact the owner through the GitHub profile:
-https://github.com/hardboy32
+For permission requests, contact the owner at **m629446@gmail.com** or through the
+[GitHub profile](https://github.com/hardboy32).
 
 These restrictions apply subject to any rights that cannot lawfully be excluded
 under applicable law. See the `LICENSE` file for the full notice.
